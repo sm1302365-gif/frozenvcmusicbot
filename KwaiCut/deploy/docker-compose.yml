@@ -1,0 +1,35 @@
+# Local production-like stack: KwaiCut backend + PostgreSQL.
+#   docker compose -f deploy/docker-compose.yml up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kwaicut
+      POSTGRES_PASSWORD: kwaicut
+      POSTGRES_DB: kwaicut
+    ports:
+      - "5432:5432"
+    volumes:
+      - kwaicut_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kwaicut"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    environment:
+      KWAICUT_ENV: production
+      KWAICUT_DATABASE_URL: postgresql+psycopg2://kwaicut:kwaicut@db:5432/kwaicut
+      KWAICUT_SECRET_KEY: change-me-in-production
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  kwaicut_pgdata:

@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kwaicut"
+version = "0.1.0"
+description = "KwaiCut — a professional, AI-powered video editing platform."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "KwaiCut" }]
+keywords = ["video", "editing", "ai", "ffmpeg", "timeline", "fastapi", "pyqt6"]
+
+# Runtime dependencies for the *core* + *backend*. The desktop UI and the
+# heavyweight AI/ML stacks are optional extras so the project stays installable
+# (and CI stays fast) on headless machines.
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "pydantic[email]>=2.6",
+    "pydantic-settings>=2.2",
+    "SQLAlchemy>=2.0",
+    "alembic>=1.13",
+    "bcrypt>=4.0",
+    "python-jose[cryptography]>=3.3",
+    "python-multipart>=0.0.9",
+    "websockets>=12.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+desktop = ["PyQt6>=6.6"]
+ai = [
+    "openai-whisper>=20231117",
+    "torch>=2.2",
+    "onnxruntime>=1.17",
+    "opencv-python-headless>=4.9",
+    "numpy>=1.26",
+]
+postgres = ["psycopg2-binary>=2.9"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=4.1",
+    "ruff>=0.4",
+    "mypy>=1.9",
+]
+
+[project.scripts]
+kwaicut = "kwaicut.cli:main"
+kwaicut-backend = "kwaicut.backend.app:run"
+kwaicut-desktop = "kwaicut.desktop.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+kwaicut = ["desktop/resources/*.qss"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = [
+    "B008",   # FastAPI uses function calls (Depends) in argument defaults.
+    "B024",   # AIProvider is an intentional marker base class.
+    "UP042",  # `str, Enum` is intentional for ORM/Pydantic value serialisation.
+    "UP047",  # Prefer the explicit TypeVar form for the provider registry.
+]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+packages = ["kwaicut"]
+mypy_path = "src"

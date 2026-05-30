@@ -1,0 +1,25 @@
+# KwaiCut backend image.
+# Build context is the KwaiCut/ directory:
+#   docker build -f deploy/Dockerfile.backend -t kwaicut-backend .
+FROM python:3.12-slim
+
+# ffmpeg/ffprobe are required by the render & AI placeholder pipelines.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    KWAICUT_ENV=production
+
+WORKDIR /app
+
+# Install dependencies first for better layer caching.
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN pip install --upgrade pip && pip install ".[postgres]"
+
+EXPOSE 8000
+
+# Gunicorn with uvicorn workers is a solid production ASGI setup.
+CMD ["uvicorn", "kwaicut.backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
